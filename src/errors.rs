@@ -1,7 +1,7 @@
 use http::{HeaderMap, Response, StatusCode};
-use http_body_util::BodyExt;
 use std::mem;
 use thiserror::Error;
+use tonic::{Code, Status};
 
 use crate::Body;
 
@@ -26,41 +26,35 @@ pub enum GovernorError {
 
 impl GovernorError {
     pub(crate) fn as_response(&mut self) -> Response<Body> {
-        let (parts, body) = match mem::replace(self, Self::UnableToExtractKey) {
+        let status = match mem::replace(self, Self::UnableToExtractKey) {
             GovernorError::TooManyRequests { wait_time, headers } => {
-                let response = Response::new(format!("Too Many Requests! Wait for {}s", wait_time));
-                let (mut parts, body) = response.into_parts();
-                parts.status = StatusCode::TOO_MANY_REQUESTS;
-                if let Some(headers) = headers {
-                    parts.headers = headers;
+                let status = Status::new(
+                    Code::Unavailable,
+                    format!("Too Many Requests! Wait for {}s", wait_time),
+                );
+                if let Some(mut headers) = headers {
+                    let _ = status.add_header(&mut headers);
                 }
-                (parts, body)
+
+                status
             }
             GovernorError::UnableToExtractKey => {
-                let response = Response::new("Unable To Extract Key!".to_string());
-                let (mut parts, body) = response.into_parts();
-                parts.status = StatusCode::INTERNAL_SERVER_ERROR;
-
-                (parts, body)
+                Status::new(Code::Internal, "Unable To Extract Key!".to_string())
             }
-            GovernorError::Other { msg, code, headers } => {
-                let response = Response::new("Other Error!".to_string());
-                let (mut parts, mut body) = response.into_parts();
-                parts.status = code;
-                if let Some(headers) = headers {
-                    parts.headers = headers;
+            GovernorError::Other {
+                msg,
+                code: _,
+                headers,
+            } => {
+                let status = Status::new(Code::Internal, msg.unwrap_or_default());
+
+                // parts.status = code;
+                if let Some(mut headers) = headers {
+                    let _ = status.add_header(&mut headers);
                 }
-                if let Some(msg) = msg {
-                    body = msg;
-                }
-                (parts, body)
+                status
             }
         };
-        Response::from_parts(
-            parts,
-            http_body_util::Full::from(body)
-                .map_err(Into::into)
-                .boxed_unsync(),
-        )
+        status.to_http()
     }
 }
