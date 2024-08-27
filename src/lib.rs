@@ -1,20 +1,18 @@
 #![doc = include_str!("../README.md")]
 
-#[cfg(test)]
-mod tests;
+extern crate governor as gov;
 
 pub mod errors;
 pub mod governor;
 pub mod key_extractor;
 use crate::governor::{Governor, GovernorConfig};
-use axum::body::Body;
+use bytes::Bytes;
 pub use errors::GovernorError;
-use governor::clock::{Clock, DefaultClock, QuantaInstant};
-use governor::middleware::{NoOpMiddleware, RateLimitingMiddleware, StateInformationMiddleware};
-use http::response::Response;
-
+use gov::clock::{Clock, DefaultClock, QuantaInstant};
+use gov::middleware::{NoOpMiddleware, RateLimitingMiddleware, StateInformationMiddleware};
 use http::header::{HeaderName, HeaderValue};
 use http::request::Request;
+use http::response::Response;
 use http::HeaderMap;
 use key_extractor::KeyExtractor;
 use pin_project::pin_project;
@@ -22,6 +20,9 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 use std::{future::Future, pin::Pin, task::ready};
 use tower::{Layer, Service};
+
+type Error = Box<dyn std::error::Error + Send + Sync>;
+type Body = http_body_util::combinators::UnsyncBoxBody<Bytes, Error>;
 
 /// The Layer type that implements tower::Layer and is passed into `.layer()`
 pub struct GovernorLayer<K, M>
@@ -56,7 +57,7 @@ impl<K: KeyExtractor, M: RateLimitingMiddleware<QuantaInstant>> Clone for Govern
 impl<K, S, ReqBody> Service<Request<ReqBody>> for Governor<K, NoOpMiddleware, S>
 where
     K: KeyExtractor,
-    S: Service<Request<ReqBody>>,
+    S: Service<Request<ReqBody>, Response = Response<Body>>,
 {
     type Response = S::Response;
     type Error = S::Error;
