@@ -1,8 +1,7 @@
 use crate::{
     key_extractor::{KeyExtractor, PeerIpKeyExtractor},
-    GovernorError,
+    Body, GovernorError,
 };
-use axum::body::Body;
 use governor::{
     clock::{DefaultClock, QuantaInstant},
     middleware::{NoOpMiddleware, RateLimitingMiddleware, StateInformationMiddleware},
