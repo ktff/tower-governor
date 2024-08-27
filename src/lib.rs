@@ -7,10 +7,10 @@ pub mod errors;
 pub mod governor;
 pub mod key_extractor;
 use crate::governor::{Governor, GovernorConfig};
-use ::governor::clock::{Clock, DefaultClock, QuantaInstant};
-use ::governor::middleware::{NoOpMiddleware, RateLimitingMiddleware, StateInformationMiddleware};
 use axum::body::Body;
 pub use errors::GovernorError;
+use governor::clock::{Clock, DefaultClock, QuantaInstant};
+use governor::middleware::{NoOpMiddleware, RateLimitingMiddleware, StateInformationMiddleware};
 use http::response::Response;
 
 use http::header::{HeaderName, HeaderValue};
@@ -56,7 +56,7 @@ impl<K: KeyExtractor, M: RateLimitingMiddleware<QuantaInstant>> Clone for Govern
 impl<K, S, ReqBody> Service<Request<ReqBody>> for Governor<K, NoOpMiddleware, S>
 where
     K: KeyExtractor,
-    S: Service<Request<ReqBody>, Response = Response<Body>>,
+    S: Service<Request<ReqBody>>,
 {
     type Response = S::Response;
     type Error = S::Error;
