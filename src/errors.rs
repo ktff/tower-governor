@@ -55,6 +55,6 @@ impl GovernorError {
                 status
             }
         };
-        status.to_http()
+        status.into_http()
     }
 }

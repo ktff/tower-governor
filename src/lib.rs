@@ -6,7 +6,6 @@ pub mod errors;
 pub mod governor;
 pub mod key_extractor;
 use crate::governor::{Governor, GovernorConfig};
-use bytes::Bytes;
 pub use errors::GovernorError;
 use gov::clock::{Clock, DefaultClock, QuantaInstant};
 use gov::middleware::{NoOpMiddleware, RateLimitingMiddleware, StateInformationMiddleware};
@@ -22,7 +21,7 @@ use std::{future::Future, pin::Pin, task::ready};
 use tower::{Layer, Service};
 
 pub type Error = tonic::Status;
-pub type Body = http_body::combinators::UnsyncBoxBody<Bytes, Error>;
+pub type Body = http_body_util::combinators::UnsyncBoxBody<bytes::Bytes, tonic::Status>;
 
 /// The Layer type that implements tower::Layer and is passed into `.layer()`
 pub struct GovernorLayer<K, M>
@@ -108,6 +107,7 @@ where
                     }
                     let mut headers = HeaderMap::new();
                     headers.insert("x-ratelimit-after", wait_time.into());
+                    headers.insert("retry-after", wait_time.into());
 
                     let error_response = self.error_handler()(GovernorError::TooManyRequests {
                         wait_time,
@@ -277,6 +277,7 @@ where
 
                     let mut headers = HeaderMap::new();
                     headers.insert("x-ratelimit-after", wait_time.into());
+                    headers.insert("retry-after", wait_time.into());
                     headers.insert(
                         "x-ratelimit-limit",
                         negative.quota().burst_size().get().into(),
