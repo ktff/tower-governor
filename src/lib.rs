@@ -18,11 +18,10 @@ use pin_project::pin_project;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 use std::{future::Future, pin::Pin, task::ready};
-use tonic::service::AxumBody;
+use tonic::body::Body;
 use tower::{Layer, Service};
 
 pub type Error = tonic::Status;
-pub type Body = AxumBody;
 
 /// The Layer type that implements tower::Layer and is passed into `.layer()`
 pub struct GovernorLayer<K, M>
