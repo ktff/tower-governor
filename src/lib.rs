@@ -6,7 +6,6 @@ pub mod errors;
 pub mod governor;
 pub mod key_extractor;
 use crate::governor::{Governor, GovernorConfig};
-use bytes::Bytes;
 pub use errors::GovernorError;
 use gov::clock::{Clock, DefaultClock, QuantaInstant};
 use gov::middleware::{NoOpMiddleware, RateLimitingMiddleware, StateInformationMiddleware};
@@ -22,7 +21,7 @@ use std::{future::Future, pin::Pin, task::ready};
 use tower::{Layer, Service};
 
 pub type Error = tonic::Status;
-pub type Body = http_body_util::combinators::UnsyncBoxBody<Bytes, Error>;
+pub type Body = tonic::body::Body;
 
 /// The Layer type that implements tower::Layer and is passed into `.layer()`
 pub struct GovernorLayer<K, M>
