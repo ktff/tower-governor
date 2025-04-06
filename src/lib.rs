@@ -22,7 +22,7 @@ use std::{future::Future, pin::Pin, task::ready};
 use tower::{Layer, Service};
 
 pub type Error = tonic::Status;
-pub type Body = http_body::combinators::UnsyncBoxBody<Bytes, Error>;
+pub type Body = http_body_util::combinators::UnsyncBoxBody<Bytes, Error>;
 
 /// The Layer type that implements tower::Layer and is passed into `.layer()`
 pub struct GovernorLayer<K, M>
